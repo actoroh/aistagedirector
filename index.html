@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인공지능 무대감독</title>
+<style>
+  :root{
+    --bg-base:#0A0D12; --bg-panel:#12161F; --bg-panel-2:#1A2029;
+    --line:#232B38;
+    --text-1:#E6EAF0; --text-2:#8993A4; --text-3:#5C6577;
+    --safe:#34D8B0; --safe-dim:#1B6B57;
+    --alert:#FF4D5E;
+    --font-display: "Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    font-family:var(--font-display); background:var(--bg-base); color:var(--text-1);
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+    background-image:
+      radial-gradient(circle at 20% 15%, rgba(52,216,176,0.08), transparent 45%),
+      radial-gradient(circle at 80% 85%, rgba(255,77,94,0.05), transparent 45%);
+  }
+  .card{
+    max-width:560px; width:100%; background:var(--bg-panel); border:1px solid var(--line);
+    border-radius:16px; padding:44px 40px; text-align:center;
+  }
+  .mark{
+    width:64px; height:64px; border-radius:16px; margin:0 auto 22px;
+    background:linear-gradient(135deg, var(--safe), #1c8c74);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono); font-weight:700; color:#04231c; font-size:22px;
+  }
+  h1{ font-size:24px; font-weight:800; margin-bottom:8px; letter-spacing:-0.2px; }
+  .subtitle{ font-size:13.5px; color:var(--text-2); margin-bottom:28px; line-height:1.6; }
+  .features{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:32px; text-align:left;
+  }
+  .feature{
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:10px; padding:13px 14px;
+  }
+  .feature .t{ font-size:12px; font-weight:700; color:var(--safe); margin-bottom:3px; }
+  .feature .d{ font-size:11px; color:var(--text-3); line-height:1.5; }
+  .cta{
+    display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:center;
+    padding:15px 20px; border-radius:10px; border:none; background:var(--safe); color:#04231c;
+    font-family:var(--font-display); font-size:14.5px; font-weight:700; cursor:pointer; text-decoration:none;
+    transition:filter .15s ease;
+  }
+  .cta:hover{ filter:brightness(1.08); }
+  .cta svg{ width:16px; height:16px; }
+  .note{ margin-top:18px; font-size:11px; color:var(--text-3); line-height:1.7; }
+  .note b{ color:var(--text-2); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="mark">AI</div>
+    <h1>인공지능 무대감독</h1>
+    <p class="subtitle">모션·음성 인식 기반 실시간 무대 안전관리 시스템<br>큐시트 관리와 관제 대시보드 통합 프로토타입</p>
+
+    <div class="features">
+      <div class="feature"><div class="t">큐시트 관리</div><div class="d">큐·신호어·구역·제한시간 편집</div></div>
+      <div class="feature"><div class="t">실시간 인식</div><div class="d">카메라 모션·음성 신호 인식</div></div>
+      <div class="feature"><div class="t">안전 판단</div><div class="d">이상 감지 시 자동 정지</div></div>
+      <div class="feature"><div class="t">관제 맵</div><div class="d">구역별 상태 시각화</div></div>
+    </div>
+
+    <a class="cta" href="app.html">
+      앱 실행하기
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+    </a>
+
+    <p class="note">카메라·마이크 기능은 <b>Chrome 또는 Edge</b> 브라우저에서 가장 안정적으로 작동합니다.<br>큐시트 데이터는 이 브라우저에 자동 저장됩니다.</p>
+  </div>
+</body>
+</html>
