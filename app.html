@@ -195,6 +195,21 @@
   .kw-chip-static.danger{ color:var(--alert); border-color:var(--alert-dim); }
   .kw-chip-static.flash{ animation:flash .6s ease; }
 
+  .audio-track{ background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px; }
+  .audio-track-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; gap:8px; }
+  .audio-track-name{ font-size:12px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .audio-track-time{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-3); flex-shrink:0; }
+  .audio-progress{ height:5px; border-radius:3px; background:var(--bg-panel-3); overflow:hidden; margin-bottom:8px; cursor:pointer; }
+  .audio-progress i{ display:block; height:100%; background:var(--safe); width:0%; }
+  .audio-track-controls{ display:flex; align-items:center; gap:8px; }
+  .audio-mini-btn{ width:26px; height:26px; border-radius:6px; border:1px solid var(--line); background:var(--bg-panel-3); color:var(--text-1); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:11px; flex-shrink:0; }
+  .audio-mini-btn:hover{ background:#242C3A; }
+  .audio-mini-btn.stop:hover{ background:#2A1418; color:var(--alert); }
+  .audio-vol-slider{ flex:1; accent-color:var(--safe); }
+  .audio-empty{ font-size:11.5px; color:var(--text-3); text-align:center; padding:14px; }
+  .stop-all-btn{ background:transparent; color:var(--alert); border-color:var(--alert-dim); }
+  .stop-all-btn:hover{ background:#2A1418; }
+
   .judge-card{ border-radius:9px; padding:14px; border:1px solid var(--line); background:var(--bg-panel-2); margin-bottom:12px; transition:all .3s ease; }
   .judge-card.normal{ border-color:var(--safe-dim); }
   .judge-card.anomaly{ border-color:var(--alert-dim); background:#2a1418; }
@@ -318,6 +333,7 @@
           <button class="btn primary" id="btn-cam">카메라 시작</button>
           <button class="btn primary" id="btn-mic">마이크 시작</button>
           <button class="btn primary" id="btn-go">지금 GO (수동 실행)</button>
+          <button class="btn stop-all-btn" id="btn-stop-audio">오디오 전체 정지</button>
           <button class="btn" id="btn-run-reset">진행 초기화</button>
           <button class="btn danger" id="btn-stop" disabled>전체 중지</button>
         </div>
@@ -413,6 +429,11 @@
                 <div class="ctrl-row"><div class="ctrl-name">무대운영 콘트롤러</div><div class="ctrl-state" id="ctrl-stage">대기</div></div>
                 <div class="ctrl-row"><div class="ctrl-name">큐 실행 엔진 (오디오/MIDI)</div><div class="ctrl-state" id="live-action-status" style="color:var(--text-3);">대기</div></div>
               </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-title">재생 중인 오디오 <span class="count" id="audio-active-count">0개</span></div>
+              <div id="active-audio-list"><div class="audio-empty">현재 재생 중인 오디오가 없습니다.</div></div>
             </div>
 
             <div class="panel">
@@ -657,11 +678,28 @@
     if(type === "audio"){
       const key = audioKey(idx);
       const attached = audioBlobs[key];
+      const a = c.audio || (c.audio = { fileName:null, volume:100, fadeIn:0, fadeOut:0, loop:false });
+      if(a.volume===undefined) a.volume=100;
       detail.innerHTML = `
         <span class="field-label">오디오 파일</span>
-        <div style="display:flex; gap:6px; align-items:center;">
+        <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px;">
           <input type="file" accept="audio/*" class="e-audio-file" style="font-size:11px; color:var(--text-2); flex:1;">
-          <span style="font-size:10.5px; color:${attached?'var(--safe)':'var(--text-3)'};">${attached ? escapeHtml(attached.name) : (c.audio && c.audio.fileName ? "다시 첨부 필요: "+escapeHtml(c.audio.fileName) : "파일 없음")}</span>
+          <span style="font-size:10.5px; color:${attached?'var(--safe)':'var(--text-3)'};">${attached ? escapeHtml(attached.name) : (a.fileName ? "다시 첨부 필요: "+escapeHtml(a.fileName) : "파일 없음")}</span>
+        </div>
+        <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:center;">
+          <label style="font-size:10.5px; color:var(--text-2); display:flex; align-items:center; gap:6px;">볼륨
+            <input type="range" class="e-audio-volume" min="0" max="100" value="${a.volume}" style="width:80px; accent-color:var(--safe);">
+            <span class="e-audio-volume-val" style="font-family:var(--font-mono); width:28px;">${a.volume}</span>
+          </label>
+          <label style="font-size:10.5px; color:var(--text-2); display:flex; align-items:center; gap:6px;">페이드인(초)
+            <input type="number" class="field-input mono e-audio-fadein" min="0" max="30" step="0.5" value="${a.fadeIn||0}" style="width:50px;">
+          </label>
+          <label style="font-size:10.5px; color:var(--text-2); display:flex; align-items:center; gap:6px;">페이드아웃(초)
+            <input type="number" class="field-input mono e-audio-fadeout" min="0" max="30" step="0.5" value="${a.fadeOut||0}" style="width:50px;">
+          </label>
+          <label style="font-size:10.5px; color:var(--text-2); display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" class="e-audio-loop" ${a.loop?"checked":""}> 반복재생
+          </label>
         </div>
       `;
       $(".e-audio-file", detail).addEventListener("change", (e) => {
@@ -669,10 +707,19 @@
         if(!file) return;
         const url = URL.createObjectURL(file);
         audioBlobs[key] = { name:file.name, url };
-        c.audio = { fileName:file.name };
+        c.audio.fileName = file.name;
         scheduleSave();
         renderActionEditor(card, idx);
       });
+      $(".e-audio-volume", detail).addEventListener("input", e => {
+        a.volume = +e.target.value;
+        $(".e-audio-volume-val", detail).textContent = a.volume;
+        scheduleSave();
+        liveAdjustVolume(key, a.volume);
+      });
+      $(".e-audio-fadein", detail).addEventListener("input", e => { a.fadeIn = +e.target.value||0; scheduleSave(); });
+      $(".e-audio-fadeout", detail).addEventListener("input", e => { a.fadeOut = +e.target.value||0; scheduleSave(); });
+      $(".e-audio-loop", detail).addEventListener("change", e => { a.loop = e.target.checked; scheduleSave(); });
     } else if(type === "midi"){
       const m = c.midi || (c.midi = { deviceId:"", channel:1, msgType:"note", number:60, value:100 });
       const options = midiOutputs.map(o => `<option value="${o.id}" ${o.id===m.deviceId?"selected":""}>${escapeHtml(o.name)}</option>`).join("");
@@ -702,7 +749,201 @@
     }
   }
 
-  // ===================== Execution engine (shared by test-fire and live AI trigger) =====================
+  // ===================== Audio playback engine (Web Audio API) =====================
+  let audioCtx = null;
+  function ensureAudioCtx(){
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      audioCtx = new AC();
+    }
+    if(audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+
+  const activeAudio = {}; // key -> { audioEl, gainNode, idx, name, fadeOutTimer, uid }
+  let audioUidSeq = 1;
+
+  function liveAdjustVolume(key, volume0to100){
+    const track = activeAudio[key];
+    if(track && track.gainNode){ track.gainNode.gain.value = volume0to100/100; }
+  }
+
+  function playCueAudio(idx, statusElId){
+    const c = cues[idx];
+    const key = audioKey(idx);
+    const attached = audioBlobs[key];
+    const statusEl = statusElId ? document.getElementById(statusElId) : null;
+    function setStatus(text, ok){
+      if(statusEl){ statusEl.textContent = text; statusEl.style.color = ok===true?"var(--safe)":ok===false?"var(--alert)":"var(--text-3)"; }
+    }
+    if(!attached){ setStatus("파일 미첨부", false); pushLog("info", `Cue ${c.id} 오디오 재생 실패 — 파일이 첨부되지 않았습니다.`); return; }
+    const ctx = ensureAudioCtx();
+    if(!ctx){ setStatus("오디오 미지원", false); pushLog("bad", "이 브라우저는 Web Audio API를 지원하지 않습니다."); return; }
+
+    // retrigger: stop any existing instance of this cue immediately
+    if(activeAudio[key]) stopCueAudio(key, true);
+
+    const a = c.audio || {};
+    const volume = (a.volume===undefined ? 100 : a.volume) / 100;
+    const fadeIn = a.fadeIn || 0;
+    const fadeOut = a.fadeOut || 0;
+
+    const audioEl = new Audio(attached.url);
+    audioEl.loop = !!a.loop;
+    audioEl.crossOrigin = "anonymous";
+
+    let sourceNode, gainNode;
+    try{
+      sourceNode = ctx.createMediaElementSource(audioEl);
+      gainNode = ctx.createGain();
+      sourceNode.connect(gainNode).connect(ctx.destination);
+    }catch(err){
+      setStatus("오디오 연결 실패", false);
+      pushLog("bad", `Cue ${c.id} 오디오 엔진 연결 실패: ${err.message}`);
+      return;
+    }
+    gainNode.gain.value = fadeIn>0 ? 0 : volume;
+
+    const uid = audioUidSeq++;
+    activeAudio[key] = { audioEl, gainNode, idx, name:attached.name, uid, fadeOutTimer:null, paused:false };
+
+    audioEl.play().then(()=>{
+      setStatus("재생 중: "+attached.name, true);
+      pushLog("ok", `Cue ${c.id} 오디오 재생 시작 (${attached.name})`);
+      if(fadeIn>0){ gainNode.gain.linearRampToValueAtTime(volume, ctx.currentTime + fadeIn); }
+      renderActiveAudioPanel();
+      startAudioPoll();
+    }).catch(err=>{
+      setStatus("재생 실패", false);
+      pushLog("bad", `Cue ${c.id} 오디오 재생 실패: ${err.message}`);
+      delete activeAudio[key];
+      renderActiveAudioPanel();
+    });
+
+    audioEl.addEventListener("loadedmetadata", () => {
+      if(fadeOut>0 && !audioEl.loop && isFinite(audioEl.duration)){
+        const t = Math.max(0, (audioEl.duration - fadeOut) * 1000);
+        activeAudio[key] && (activeAudio[key].fadeOutTimer = setTimeout(() => {
+          if(activeAudio[key] && activeAudio[key].uid===uid) rampGain(gainNode, 0, fadeOut);
+        }, t));
+      }
+    });
+    audioEl.addEventListener("ended", () => {
+      if(activeAudio[key] && activeAudio[key].uid===uid){
+        delete activeAudio[key];
+        renderActiveAudioPanel();
+      }
+    });
+  }
+
+  function rampGain(gainNode, target, seconds){
+    const ctx = audioCtx; if(!ctx) { gainNode.gain.value = target; return; }
+    const now = ctx.currentTime;
+    gainNode.gain.cancelScheduledValues(now);
+    gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+    gainNode.gain.linearRampToValueAtTime(target, now + Math.max(0.02, seconds));
+  }
+
+  function stopCueAudio(key, immediate){
+    const track = activeAudio[key];
+    if(!track) return;
+    if(track.fadeOutTimer) clearTimeout(track.fadeOutTimer);
+    const c = cues[track.idx];
+    const fadeOut = (c && c.audio && c.audio.fadeOut) || 0;
+    const doStop = () => { try{ track.audioEl.pause(); }catch(e){} delete activeAudio[key]; renderActiveAudioPanel(); };
+    if(!immediate && fadeOut>0){
+      rampGain(track.gainNode, 0, fadeOut);
+      setTimeout(doStop, fadeOut*1000 + 30);
+    } else if(!immediate){
+      rampGain(track.gainNode, 0, 0.05);
+      setTimeout(doStop, 80);
+    } else {
+      doStop();
+    }
+  }
+
+  function togglePauseAudio(key){
+    const track = activeAudio[key]; if(!track) return;
+    if(track.audioEl.paused){ track.audioEl.play(); track.paused=false; }
+    else { track.audioEl.pause(); track.paused=true; }
+    renderActiveAudioPanel();
+  }
+
+  function stopAllAudio(){
+    Object.keys(activeAudio).forEach(key => stopCueAudio(key, true));
+    pushLog("info", "모든 오디오를 정지했습니다.");
+  }
+  $("#btn-stop-audio").addEventListener("click", stopAllAudio);
+
+  function fmtTime(sec){
+    if(!isFinite(sec) || sec<0) sec = 0;
+    const m = Math.floor(sec/60), s = Math.floor(sec%60);
+    return `${m}:${String(s).padStart(2,"0")}`;
+  }
+
+  let audioPollHandle = null;
+  function startAudioPoll(){
+    if(audioPollHandle) return;
+    audioPollHandle = setInterval(() => {
+      if(!Object.keys(activeAudio).length){ clearInterval(audioPollHandle); audioPollHandle=null; return; }
+      updateAudioProgressOnly();
+    }, 250);
+  }
+
+  function updateAudioProgressOnly(){
+    Object.entries(activeAudio).forEach(([key, track]) => {
+      const bar = document.querySelector(`.audio-progress[data-key="${cssEscape(key)}"] i`);
+      const timeEl = document.querySelector(`.audio-track-time[data-key="${cssEscape(key)}"]`);
+      if(bar && track.audioEl.duration){
+        const pct = Math.min(100, (track.audioEl.currentTime/track.audioEl.duration)*100);
+        bar.style.width = pct+"%";
+      }
+      if(timeEl){ timeEl.textContent = `${fmtTime(track.audioEl.currentTime)} / ${fmtTime(track.audioEl.duration)}`; }
+    });
+  }
+  function cssEscape(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g, "_"); }
+
+  function renderActiveAudioPanel(){
+    const box = $("#active-audio-list");
+    if(!box) return;
+    const keys = Object.keys(activeAudio);
+    $("#audio-active-count").textContent = keys.length + "개";
+    if(!keys.length){
+      box.innerHTML = `<div class="audio-empty">현재 재생 중인 오디오가 없습니다.</div>`;
+      return;
+    }
+    box.innerHTML = keys.map(key => {
+      const t = activeAudio[key];
+      const c = cues[t.idx];
+      const vol = c && c.audio ? (c.audio.volume===undefined?100:c.audio.volume) : 100;
+      return `
+        <div class="audio-track">
+          <div class="audio-track-top">
+            <span class="audio-track-name">${escapeHtml(t.name)}${c?` · Cue ${escapeHtml(c.id)}`:""}</span>
+            <span class="audio-track-time" data-key="${cssEscape(key)}">0:00 / 0:00</span>
+          </div>
+          <div class="audio-progress" data-key="${cssEscape(key)}"><i></i></div>
+          <div class="audio-track-controls">
+            <button class="audio-mini-btn" data-pause="${escapeHtml(key)}">${t.audioEl.paused?"▶":"❚❚"}</button>
+            <button class="audio-mini-btn stop" data-stopone="${escapeHtml(key)}">■</button>
+            <input type="range" class="audio-vol-slider" min="0" max="100" value="${vol}" data-volkey="${escapeHtml(key)}">
+          </div>
+        </div>`;
+    }).join("");
+
+    box.querySelectorAll("[data-pause]").forEach(btn => btn.addEventListener("click", () => togglePauseAudio(btn.dataset.pause)));
+    box.querySelectorAll("[data-stopone]").forEach(btn => btn.addEventListener("click", () => stopCueAudio(btn.dataset.stopone, false)));
+    box.querySelectorAll("[data-volkey]").forEach(sl => sl.addEventListener("input", (e) => {
+      const key = e.target.dataset.volkey;
+      const track = activeAudio[key];
+      if(track){ track.gainNode.gain.value = (+e.target.value)/100; }
+      const t = activeAudio[key];
+      if(t){ const c = cues[t.idx]; if(c && c.audio){ c.audio.volume = +e.target.value; scheduleSave(); } }
+    }));
+  }
+
+  // ===================== MIDI execution =====================
   function sendMidi(m){
     if(!midiAccess) return { ok:false, msg:"MIDI 장치가 연결되지 않았습니다. 상단 'MIDI 장치 연결' 버튼을 먼저 눌러주세요." };
     let output = null;
@@ -725,17 +966,7 @@
       if(statusEl){ statusEl.textContent = text; statusEl.style.color = ok===true?"var(--safe)":ok===false?"var(--alert)":"var(--text-3)"; }
     }
     if(type === "audio"){
-      const key = audioKey(idx);
-      const attached = audioBlobs[key];
-      if(!attached){ setStatus("파일 미첨부", false); pushLog("info", `Cue ${c.id} 오디오 재생 실패 — 파일이 첨부되지 않았습니다.`); return; }
-      const audio = new Audio(attached.url);
-      audio.play().then(()=>{
-        setStatus("재생 중: "+attached.name, true);
-        pushLog("ok", `Cue ${c.id} 오디오 재생 시작 (${attached.name})`);
-      }).catch(err=>{
-        setStatus("재생 실패", false);
-        pushLog("bad", `Cue ${c.id} 오디오 재생 실패: ${err.message}`);
-      });
+      playCueAudio(idx, statusElId);
     } else if(type === "midi"){
       const res = sendMidi(c.midi || {});
       setStatus(res.ok ? "MIDI 전송됨" : "MIDI 전송 실패", res.ok);
@@ -1137,6 +1368,7 @@
     if(recognition){ recognitionActive=false; try{ recognition.stop(); }catch(e){} recognition=null; }
     if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
     stopCueTimer();
+    stopAllAudio();
     $("#video-thumb").classList.remove("live","motion","spike");
     $("#btn-cam").disabled=false; $("#btn-mic").disabled=false; $("#btn-stop").disabled=true;
     $("#motion-badge").textContent="모션: 대기"; $("#motion-badge").className="badge";
