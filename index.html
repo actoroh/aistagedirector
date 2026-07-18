@@ -36,13 +36,14 @@
   h1{ font-size:24px; font-weight:800; margin-bottom:8px; letter-spacing:-0.2px; }
   .subtitle{ font-size:13.5px; color:var(--text-2); margin-bottom:28px; line-height:1.6; }
   .features{
-    display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:32px; text-align:left;
+    display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:28px; text-align:left;
   }
   .feature{
     background:var(--bg-panel-2); border:1px solid var(--line); border-radius:10px; padding:13px 14px;
   }
   .feature .t{ font-size:12px; font-weight:700; color:var(--safe); margin-bottom:3px; }
   .feature .d{ font-size:11px; color:var(--text-3); line-height:1.5; }
+  .mode-row{ display:flex; flex-direction:column; gap:10px; }
   .cta{
     display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:center;
     padding:15px 20px; border-radius:10px; border:none; background:var(--safe); color:#04231c;
@@ -50,7 +51,10 @@
     transition:filter .15s ease;
   }
   .cta:hover{ filter:brightness(1.08); }
+  .cta.secondary{ background:var(--bg-panel-2); color:var(--text-1); border:1px solid var(--line); }
+  .cta.secondary:hover{ background:#242C3A; filter:none; }
   .cta svg{ width:16px; height:16px; }
+  .cta-sub{ font-size:10.5px; color:var(--text-3); margin-top:-2px; margin-bottom:2px; text-align:center; }
   .note{ margin-top:18px; font-size:11px; color:var(--text-3); line-height:1.7; }
   .note b{ color:var(--text-2); }
 </style>
@@ -63,17 +67,24 @@
 
     <div class="features">
       <div class="feature"><div class="t">큐시트 관리</div><div class="d">큐·신호어·구역·제한시간 편집</div></div>
+      <div class="feature"><div class="t">음향 재생</div><div class="d">볼륨·페이드·MIDI 큐 실행</div></div>
       <div class="feature"><div class="t">실시간 인식</div><div class="d">카메라 모션·음성 신호 인식</div></div>
       <div class="feature"><div class="t">안전 판단</div><div class="d">이상 감지 시 자동 정지</div></div>
-      <div class="feature"><div class="t">관제 맵</div><div class="d">구역별 상태 시각화</div></div>
     </div>
 
-    <a class="cta" href="app.html">
-      앱 실행하기
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-    </a>
+    <div class="mode-row">
+      <a class="cta" href="sound-player.html">
+        음향 플레이어만 (심플 모드)
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+      <div class="cta-sub">큐 재생·볼륨·페이드에만 집중한 간단한 화면</div>
+      <a class="cta secondary" href="app.html">
+        전체 기능 (카메라·마이크·MIDI 포함)
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+    </div>
 
-    <p class="note">카메라·마이크 기능은 <b>Chrome 또는 Edge</b> 브라우저에서 가장 안정적으로 작동합니다.<br>큐시트 데이터는 이 브라우저에 자동 저장됩니다.</p>
+    <p class="note">두 모드는 같은 큐시트 데이터를 공유합니다. 카메라·마이크 기능은 <b>Chrome 또는 Edge</b> 브라우저에서 가장 안정적으로 작동합니다.<br>큐시트 데이터는 이 브라우저에 자동 저장됩니다.</p>
   </div>
 </body>
 </html>

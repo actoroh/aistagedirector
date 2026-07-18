@@ -1,0 +1,550 @@
+<div id="app-root"></div>
+<style>
+  :root{
+    --bg-base:#0A0D12; --bg-panel:#12161F; --bg-panel-2:#1A2029; --bg-panel-3:#20273240;
+    --line:#232B38; --line-soft:#1C2330;
+    --text-1:#E6EAF0; --text-2:#8993A4; --text-3:#5C6577;
+    --safe:#34D8B0; --safe-dim:#1B6B57;
+    --alert:#FF4D5E; --alert-dim:#7A2530;
+    --standby:#F2B84B; --standby-dim:#7A5C22;
+    --font-display: "Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  *{ box-sizing:border-box; }
+  #app-root{
+    font-family:var(--font-display); background:var(--bg-base); color:var(--text-1);
+    min-height:100vh; padding:20px;
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(52,216,176,0.05), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(255,77,94,0.04), transparent 40%);
+  }
+  .wrap{ max-width:1100px; margin:0 auto; }
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+    padding:14px 20px; margin-bottom:16px;
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px;
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand-mark{
+    width:38px; height:38px; border-radius:9px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--safe), #1c8c74);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono); font-weight:700; color:#04231c; font-size:14px;
+  }
+  .brand h1{ font-size:16px; margin:0; font-weight:700; }
+  .brand p{ font-size:12px; margin:2px 0 0; color:var(--text-2); }
+
+  .btn{
+    font-family:var(--font-display); font-size:12.5px; font-weight:600;
+    padding:9px 14px; border-radius:7px; border:1px solid var(--line);
+    background:var(--bg-panel-2); color:var(--text-1); cursor:pointer;
+    display:flex; align-items:center; gap:6px; text-decoration:none; transition:all .15s ease;
+  }
+  .btn:hover{ background:#242C3A; border-color:#34404F; }
+  .btn.primary{ background:var(--safe); color:#04231c; border-color:var(--safe); }
+  .btn.primary:hover{ filter:brightness(1.08); }
+  .btn.danger{ background:transparent; color:var(--alert); border-color:var(--alert-dim); }
+  .btn.danger:hover{ background:#2A1418; }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  input[type=file]{ }
+  #file-import{ display:none; }
+
+  .show-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .show-select{ background:var(--bg-panel-2); border:1px solid var(--line); border-radius:7px; color:var(--text-1); padding:9px 12px; font-size:12.5px; font-family:var(--font-display); min-width:180px; }
+  .badge{ font-family:var(--font-mono); font-size:10.5px; padding:3px 9px; border-radius:100px; color:var(--text-2); background:var(--bg-panel-3); }
+
+  .go-bar{
+    display:flex; align-items:center; gap:12px; padding:18px 20px; margin-bottom:16px;
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:12px;
+  }
+  .go-btn{
+    flex-shrink:0; width:110px; height:64px; border-radius:10px; border:none;
+    background:var(--safe); color:#04231c; font-size:20px; font-weight:800; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; letter-spacing:1px;
+    transition:filter .1s ease, transform .05s ease;
+  }
+  .go-btn:hover{ filter:brightness(1.08); }
+  .go-btn:active{ transform:scale(0.97); }
+  .go-info{ flex:1; }
+  .go-info .cur-label{ font-size:10.5px; color:var(--text-3); text-transform:uppercase; letter-spacing:.5px; }
+  .go-info .cur-name{ font-size:16px; font-weight:700; margin:2px 0; }
+  .go-info .cur-next{ font-size:11.5px; color:var(--text-2); }
+  .go-nav{ display:flex; flex-direction:column; gap:6px; }
+  .nav-btn{ width:34px; height:26px; border-radius:6px; border:1px solid var(--line); background:var(--bg-panel-2); color:var(--text-1); cursor:pointer; }
+  .nav-btn:hover{ background:#242C3A; }
+  .kbd-hint{ font-family:var(--font-mono); font-size:10px; color:var(--text-3); }
+
+  .panel{ background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:16px; display:flex; flex-direction:column; }
+  .panel + .panel{ margin-top:16px; }
+  .panel-title{ font-size:11.5px; letter-spacing:.6px; text-transform:uppercase; color:var(--text-2); font-weight:700; margin:0 0 12px; display:flex; align-items:center; justify-content:space-between; }
+  .panel-title .count{ font-family:var(--font-mono); color:var(--text-3); text-transform:none; letter-spacing:0; }
+
+  .cue-row{ background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px; padding:11px 13px; margin-bottom:7px; }
+  .cue-row.current{ border-color:var(--safe-dim); background:#122824; }
+  .cue-row-top{ display:flex; align-items:center; gap:10px; cursor:pointer; }
+  .cue-row-num{ font-family:var(--font-mono); font-size:11px; color:var(--text-3); width:34px; flex-shrink:0; }
+  .cue-row-name{ font-size:13px; font-weight:600; flex:1; }
+  .cue-row-audio{ font-size:10.5px; color:var(--text-3); }
+  .cue-row-audio.attached{ color:var(--safe); }
+  .cue-row-toggle{ font-size:11px; color:var(--text-2); padding:4px 8px; border-radius:5px; border:1px solid var(--line); background:transparent; cursor:pointer; }
+  .cue-row-toggle:hover{ background:var(--bg-panel-3); }
+  .cue-settings{ display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); flex-wrap:wrap; gap:14px; align-items:center; }
+  .cue-settings.open{ display:flex; }
+  .cue-settings label{ font-size:10.5px; color:var(--text-2); display:flex; align-items:center; gap:6px; }
+  .cue-settings input[type=number]{ width:48px; background:var(--bg-panel-3); border:1px solid var(--line); border-radius:5px; color:var(--text-1); padding:5px 6px; font-family:var(--font-mono); font-size:11px; }
+  .cue-settings input[type=range]{ width:80px; accent-color:var(--safe); }
+  .cue-settings input[type=file]{ font-size:10.5px; color:var(--text-2); max-width:160px; }
+  .empty-state{ text-align:center; padding:40px 20px; color:var(--text-3); font-size:13px; }
+
+  .audio-track{ background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px; }
+  .audio-track-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; gap:8px; }
+  .audio-track-name{ font-size:12px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .audio-track-time{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-3); flex-shrink:0; }
+  .audio-progress{ height:6px; border-radius:3px; background:var(--bg-panel-3); overflow:hidden; margin-bottom:8px; cursor:pointer; }
+  .audio-progress i{ display:block; height:100%; background:var(--safe); width:0%; }
+  .audio-track-controls{ display:flex; align-items:center; gap:8px; }
+  .audio-mini-btn{ width:26px; height:26px; border-radius:6px; border:1px solid var(--line); background:var(--bg-panel-3); color:var(--text-1); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:11px; flex-shrink:0; }
+  .audio-mini-btn:hover{ background:#242C3A; }
+  .audio-mini-btn.stop:hover{ background:#2A1418; color:var(--alert); }
+  .audio-vol-slider{ flex:1; accent-color:var(--safe); }
+  .audio-empty{ font-size:11.5px; color:var(--text-3); text-align:center; padding:14px; }
+  .stop-all-btn{ background:transparent; color:var(--alert); border-color:var(--alert-dim); }
+  .stop-all-btn:hover{ background:#2A1418; }
+
+  .log{ font-family:var(--font-mono); font-size:11px; display:flex; flex-direction:column-reverse; gap:5px; max-height:140px; overflow-y:auto; }
+  .log-row{ display:flex; gap:10px; padding:5px 8px; border-radius:5px; background:var(--bg-panel-2); }
+  .log-row .t{ color:var(--text-3); flex-shrink:0; }
+  .log-row.ok .msg{ color:var(--safe); }
+  .log-row.bad .msg{ color:var(--alert); }
+  .log-row.info .msg{ color:var(--text-2); }
+
+  .footnote{ font-size:11px; color:var(--text-3); text-align:center; margin-top:18px; line-height:1.8; }
+  .footnote b{ color:var(--text-2); }
+  ::-webkit-scrollbar{ width:6px; }
+  ::-webkit-scrollbar-thumb{ background:#2A3240; border-radius:3px; }
+</style>
+
+<script>
+(function(){
+  const $ = (sel, el=document) => el.querySelector(sel);
+  const $$ = (sel, el=document) => Array.from(el.querySelectorAll(sel));
+  const root = document.getElementById("app-root");
+
+  root.innerHTML = `
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand">
+          <div class="brand-mark">AI</div>
+          <div>
+            <h1>인공지능 무대감독 · 사운드 플레이어</h1>
+            <p>음향 큐 재생 전용 심플 모드</p>
+          </div>
+        </div>
+        <a class="btn" href="app.html">전체 기능 모드로 전환</a>
+      </div>
+
+      <div class="show-row">
+        <select class="show-select" id="show-select"></select>
+        <span class="badge" style="display:flex; align-items:center; gap:6px;">마스터 볼륨
+          <input type="range" id="master-volume" min="0" max="100" value="100" style="width:80px; accent-color:var(--safe);">
+          <span id="master-volume-val" style="font-family:var(--font-mono);">100</span>
+        </span>
+        <div style="flex:1;"></div>
+        <button class="btn stop-all-btn" id="btn-stop-audio">전체 정지</button>
+      </div>
+
+      <div class="go-bar">
+        <button class="go-btn" id="btn-go">GO</button>
+        <div class="go-info">
+          <div class="cur-label">현재 큐</div>
+          <div class="cur-name" id="go-cur-name">-</div>
+          <div class="cur-next" id="go-cur-next">다음 큐: -</div>
+        </div>
+        <div class="go-nav">
+          <button class="nav-btn" id="btn-prev" title="이전 큐로">↑</button>
+          <button class="nav-btn" id="btn-next" title="다음 큐로">↓</button>
+        </div>
+        <span class="kbd-hint">Space = GO</span>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">큐 목록 <span class="count" id="cue-count">0개</span></div>
+        <div id="cue-list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">재생 중인 오디오 <span class="count" id="audio-active-count">0개</span></div>
+        <div id="active-audio-list"><div class="audio-empty">현재 재생 중인 오디오가 없습니다.</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">로그</div>
+        <div class="log" id="log"></div>
+      </div>
+
+      <div class="footnote">
+        이 페이지는 음향 큐 재생에만 집중한 심플 모드입니다. 안전 모니터링, 모션·음성 인식, MIDI 기능은 <b>전체 기능 모드</b>에서 사용할 수 있습니다.<br>
+        오디오 파일은 이 브라우저 세션에만 유지되며 새로고침 시 다시 첨부해야 합니다. 큐 구성은 전체 기능 모드와 동일한 저장소를 공유합니다.
+      </div>
+    </div>
+  `;
+
+  // ===================== Storage helpers (localStorage — shared with app.html) =====================
+  async function safeGet(key){
+    try{ return window.localStorage.getItem(key); }
+    catch(e){ return null; }
+  }
+  async function safeSet(key, value){
+    try{ window.localStorage.setItem(key, value); return true; }
+    catch(e){ return false; }
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function cssEscape(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g, "_"); }
+  function fmtTime(sec){
+    if(!isFinite(sec) || sec<0) sec = 0;
+    const m = Math.floor(sec/60), s = Math.floor(sec%60);
+    return `${m}:${String(s).padStart(2,"0")}`;
+  }
+
+  // ===================== Shared state =====================
+  let shows = [];
+  let currentSlug = null;
+  let cues = [];
+  let cueIdx = 0;
+  let saveTimer = null;
+
+  async function init(){
+    const rawShows = await safeGet("shows:list");
+    if(rawShows){ try{ shows = JSON.parse(rawShows); }catch(e){ shows=[]; } }
+    if(!shows.length){
+      shows = [{ slug:"default", name:"샘플 공연" }];
+      await safeSet("shows:list", JSON.stringify(shows));
+    }
+    currentSlug = shows[0].slug;
+    await loadCueSheet(currentSlug);
+    renderShowSelect();
+    renderCueList();
+    updateGoBar();
+  }
+  async function loadCueSheet(slug){
+    const raw = await safeGet("cuesheet:"+slug);
+    cues = raw ? (JSON.parse(raw) || []) : [];
+    cueIdx = 0;
+  }
+  function scheduleSave(){
+    if(saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => { safeSet("cuesheet:"+currentSlug, JSON.stringify(cues)); }, 400);
+  }
+  function renderShowSelect(){
+    $("#show-select").innerHTML = shows.map(s => `<option value="${s.slug}" ${s.slug===currentSlug?"selected":""}>${escapeHtml(s.name)}</option>`).join("");
+  }
+  $("#show-select").addEventListener("change", async (e) => {
+    currentSlug = e.target.value;
+    await loadCueSheet(currentSlug);
+    renderCueList(); updateGoBar();
+  });
+
+  function nowStr(){ return new Date().toTimeString().slice(0,8); }
+  function pushLog(type, msg){
+    const log = $("#log");
+    const row = document.createElement("div");
+    row.className = "log-row " + type;
+    row.innerHTML = `<span class="t">${nowStr()}</span><span class="msg">${msg}</span>`;
+    log.prepend(row);
+    while(log.children.length>40) log.removeChild(log.lastChild);
+  }
+
+  // ===================== In-memory audio attachments (session only) =====================
+  const audioBlobs = {};
+  function audioKey(idx){ return currentSlug + ":" + (cues[idx] ? cues[idx].id : idx); }
+
+  // ===================== Cue list rendering =====================
+  function renderCueList(){
+    const list = $("#cue-list");
+    $("#cue-count").textContent = cues.length + "개";
+    if(!cues.length){
+      list.innerHTML = `<div class="empty-state">등록된 큐가 없습니다. 전체 기능 모드의 "큐시트 관리" 탭에서 큐를 추가해 주세요.</div>`;
+      return;
+    }
+    if(cueIdx >= cues.length) cueIdx = cues.length-1;
+    list.innerHTML = cues.map((c,i) => {
+      const key = audioKey(i);
+      const attached = audioBlobs[key];
+      const hasAudio = c.actionType === "audio";
+      const audioLabel = !hasAudio ? "재생 설정 없음" : (attached ? escapeHtml(attached.name) : (c.audio && c.audio.fileName ? "다시 첨부 필요: "+escapeHtml(c.audio.fileName) : "파일 없음"));
+      return `
+        <div class="cue-row ${i===cueIdx?'current':''}" data-idx="${i}">
+          <div class="cue-row-top">
+            <span class="cue-row-num">${escapeHtml(c.id)}</span>
+            <span class="cue-row-name">${escapeHtml(c.scene||"(제목 없음)")}</span>
+            <span class="cue-row-audio ${hasAudio && attached ? 'attached':''}">${audioLabel}</span>
+            <button class="cue-row-toggle" data-toggle="${i}">설정</button>
+          </div>
+          <div class="cue-settings" id="cue-settings-${i}"></div>
+        </div>`;
+    }).join("");
+
+    $$(".cue-row-top", list).forEach(top => {
+      top.addEventListener("click", (e) => {
+        if(e.target.closest("[data-toggle]")) return;
+        const idx = +top.closest(".cue-row").dataset.idx;
+        cueIdx = idx; renderCueList(); updateGoBar();
+      });
+    });
+    $$("[data-toggle]", list).forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = +btn.dataset.toggle;
+        const panel = $("#cue-settings-"+idx);
+        const willOpen = !panel.classList.contains("open");
+        $$(".cue-settings").forEach(p => p.classList.remove("open"));
+        if(willOpen){ renderCueSettings(panel, idx); panel.classList.add("open"); }
+      });
+    });
+  }
+
+  function renderCueSettings(panel, idx){
+    const c = cues[idx];
+    if(c.actionType !== "audio"){
+      panel.innerHTML = `<span style="font-size:11px;color:var(--text-3);">이 큐는 오디오 재생으로 설정되어 있지 않습니다. 전체 기능 모드의 "큐시트 관리"에서 실행 방식을 오디오로 바꿔주세요.</span>`;
+      return;
+    }
+    const a = c.audio || (c.audio = { volume:100, fadeIn:0, fadeOut:0, loop:false, preWait:0, exclusive:false, autoContinue:false });
+    if(a.volume===undefined) a.volume = 100;
+    const key = audioKey(idx);
+    const attached = audioBlobs[key];
+    panel.innerHTML = `
+      <label>파일 <input type="file" accept="audio/*" class="s-file"></label>
+      <span style="font-size:10.5px;color:${attached?'var(--safe)':'var(--text-3)'};">${attached?escapeHtml(attached.name):(a.fileName?'다시 첨부 필요':'파일 없음')}</span>
+      <label>볼륨 <input type="range" class="s-volume" min="0" max="100" value="${a.volume}"><span class="s-volume-val" style="font-family:var(--font-mono);">${a.volume}</span></label>
+      <label>페이드인 <input type="number" class="s-fadein" min="0" max="30" step="0.5" value="${a.fadeIn||0}">초</label>
+      <label>페이드아웃 <input type="number" class="s-fadeout" min="0" max="30" step="0.5" value="${a.fadeOut||0}">초</label>
+      <label>프리웨이트 <input type="number" class="s-prewait" min="0" max="60" step="0.5" value="${a.preWait||0}">초</label>
+      <label><input type="checkbox" class="s-loop" ${a.loop?"checked":""}> 반복재생</label>
+      <label><input type="checkbox" class="s-exclusive" ${a.exclusive?"checked":""}> 단독재생</label>
+      <label><input type="checkbox" class="s-autocontinue" ${a.autoContinue?"checked":""}> 종료 시 자동 진행</label>
+    `;
+    $(".s-file", panel).addEventListener("change", (e) => {
+      const file = e.target.files[0]; if(!file) return;
+      const url = URL.createObjectURL(file);
+      audioBlobs[key] = { name:file.name, url };
+      a.fileName = file.name;
+      scheduleSave(); renderCueList();
+      setTimeout(() => { $("[data-toggle='"+idx+"']").click(); $("[data-toggle='"+idx+"']").click(); }, 0);
+    });
+    $(".s-volume", panel).addEventListener("input", e => { a.volume=+e.target.value; $(".s-volume-val",panel).textContent=a.volume; scheduleSave(); liveAdjustVolume(key, a.volume); });
+    $(".s-fadein", panel).addEventListener("input", e => { a.fadeIn=+e.target.value||0; scheduleSave(); });
+    $(".s-fadeout", panel).addEventListener("input", e => { a.fadeOut=+e.target.value||0; scheduleSave(); });
+    $(".s-prewait", panel).addEventListener("input", e => { a.preWait=+e.target.value||0; scheduleSave(); });
+    $(".s-loop", panel).addEventListener("change", e => { a.loop=e.target.checked; scheduleSave(); });
+    $(".s-exclusive", panel).addEventListener("change", e => { a.exclusive=e.target.checked; scheduleSave(); });
+    $(".s-autocontinue", panel).addEventListener("change", e => { a.autoContinue=e.target.checked; scheduleSave(); });
+  }
+
+  function updateGoBar(){
+    const c = cues[cueIdx];
+    const nc = cues[cueIdx+1];
+    $("#go-cur-name").textContent = c ? `${c.id} · ${c.scene||"(제목 없음)"}` : "-";
+    $("#go-cur-next").textContent = "다음 큐: " + (nc ? `${nc.id} · ${nc.scene||"(제목 없음)"}` : "없음 (마지막 큐)");
+  }
+
+  $("#btn-prev").addEventListener("click", () => { if(cueIdx>0){ cueIdx--; renderCueList(); updateGoBar(); } });
+  $("#btn-next").addEventListener("click", () => { if(cueIdx<cues.length-1){ cueIdx++; renderCueList(); updateGoBar(); } });
+
+  // ===================== Audio playback engine (Web Audio API) — same design as full app =====================
+  let audioCtx = null, masterGainNode = null;
+  function ensureAudioCtx(){
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      audioCtx = new AC();
+      masterGainNode = audioCtx.createGain();
+      masterGainNode.gain.value = (+$("#master-volume").value)/100;
+      masterGainNode.connect(audioCtx.destination);
+    }
+    if(audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  const activeAudio = {};
+  let audioUidSeq = 1;
+
+  function liveAdjustVolume(key, vol){ const t=activeAudio[key]; if(t && t.gainNode){ t.gainNode.gain.value = vol/100; } }
+
+  function playCueAudio(idx){
+    const c = cues[idx];
+    const key = audioKey(idx);
+    const attached = audioBlobs[key];
+    if(!attached){ pushLog("info", `Cue ${c.id} 오디오 재생 실패 — 파일이 첨부되지 않았습니다.`); return; }
+    const ctx = ensureAudioCtx();
+    if(!ctx){ pushLog("bad", "이 브라우저는 Web Audio API를 지원하지 않습니다."); return; }
+    if(activeAudio[key]) stopCueAudio(key, true);
+    const a = c.audio || {};
+    const preWait = a.preWait || 0;
+    if(a.exclusive){ Object.keys(activeAudio).forEach(k => { if(k!==key) stopCueAudio(k, false); }); }
+    if(preWait > 0){
+      const token = {};
+      activeAudio[key] = { preWaitTimer:token, idx, name:attached.name, waiting:true };
+      renderActiveAudioPanel();
+      const th = setTimeout(() => {
+        if(activeAudio[key] && activeAudio[key].preWaitTimer===token){ delete activeAudio[key]; startPlayback(idx, key, attached); }
+      }, preWait*1000);
+      activeAudio[key].timeoutHandle = th;
+    } else {
+      startPlayback(idx, key, attached);
+    }
+  }
+
+  function startPlayback(idx, key, attached){
+    const c = cues[idx];
+    const ctx = ensureAudioCtx();
+    const a = c.audio || {};
+    const volume = (a.volume===undefined?100:a.volume)/100;
+    const fadeIn = a.fadeIn||0, fadeOut = a.fadeOut||0, autoContinue = !!a.autoContinue;
+    const audioEl = new Audio(attached.url);
+    audioEl.loop = !!a.loop;
+    let sourceNode, gainNode;
+    try{
+      sourceNode = ctx.createMediaElementSource(audioEl);
+      gainNode = ctx.createGain();
+      sourceNode.connect(gainNode).connect(masterGainNode || ctx.destination);
+    }catch(err){ pushLog("bad", `Cue ${c.id} 오디오 엔진 연결 실패: ${err.message}`); return; }
+    gainNode.gain.value = fadeIn>0?0:volume;
+    const uid = audioUidSeq++;
+    activeAudio[key] = { audioEl, gainNode, idx, name:attached.name, uid, fadeOutTimer:null };
+    audioEl.play().then(() => {
+      pushLog("ok", `Cue ${c.id} 오디오 재생 시작 (${attached.name})`);
+      if(fadeIn>0) gainNode.gain.linearRampToValueAtTime(volume, ctx.currentTime+fadeIn);
+      renderActiveAudioPanel(); startAudioPoll();
+    }).catch(err => {
+      pushLog("bad", `Cue ${c.id} 오디오 재생 실패: ${err.message}`);
+      delete activeAudio[key]; renderActiveAudioPanel();
+    });
+    audioEl.addEventListener("loadedmetadata", () => {
+      if(fadeOut>0 && !audioEl.loop && isFinite(audioEl.duration)){
+        const t = Math.max(0, (audioEl.duration-fadeOut)*1000);
+        activeAudio[key] && (activeAudio[key].fadeOutTimer = setTimeout(() => {
+          if(activeAudio[key] && activeAudio[key].uid===uid) rampGain(gainNode, 0, fadeOut);
+        }, t));
+      }
+    });
+    audioEl.addEventListener("ended", () => {
+      if(activeAudio[key] && activeAudio[key].uid===uid){
+        delete activeAudio[key]; renderActiveAudioPanel();
+        if(autoContinue && idx===cueIdx && cueIdx<cues.length-1){ cueIdx++; renderCueList(); updateGoBar(); fireGo(); }
+      }
+    });
+  }
+
+  function rampGain(gainNode, target, seconds){
+    const ctx = audioCtx; if(!ctx){ gainNode.gain.value=target; return; }
+    const now = ctx.currentTime;
+    gainNode.gain.cancelScheduledValues(now);
+    gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+    gainNode.gain.linearRampToValueAtTime(target, now+Math.max(0.02, seconds));
+  }
+
+  function stopCueAudio(key, immediate){
+    const track = activeAudio[key]; if(!track) return;
+    if(track.timeoutHandle) clearTimeout(track.timeoutHandle);
+    if(track.waiting){ delete activeAudio[key]; renderActiveAudioPanel(); return; }
+    if(track.fadeOutTimer) clearTimeout(track.fadeOutTimer);
+    const c = cues[track.idx];
+    const fadeOut = (c && c.audio && c.audio.fadeOut) || 0;
+    const doStop = () => { try{ track.audioEl.pause(); }catch(e){} delete activeAudio[key]; renderActiveAudioPanel(); };
+    if(!immediate && fadeOut>0){ rampGain(track.gainNode, 0, fadeOut); setTimeout(doStop, fadeOut*1000+30); }
+    else if(!immediate){ rampGain(track.gainNode, 0, 0.05); setTimeout(doStop, 80); }
+    else{ doStop(); }
+  }
+  function togglePauseAudio(key){
+    const track = activeAudio[key]; if(!track || track.waiting) return;
+    if(track.audioEl.paused) track.audioEl.play(); else track.audioEl.pause();
+    renderActiveAudioPanel();
+  }
+  function seekAudio(key, ratio){
+    const track = activeAudio[key]; if(!track || track.waiting || !track.audioEl.duration) return;
+    track.audioEl.currentTime = Math.max(0, Math.min(1, ratio)) * track.audioEl.duration;
+  }
+  function stopAllAudio(){ Object.keys(activeAudio).forEach(k => stopCueAudio(k, true)); pushLog("info", "모든 오디오를 정지했습니다."); }
+  $("#btn-stop-audio").addEventListener("click", stopAllAudio);
+  $("#master-volume").addEventListener("input", (e) => {
+    $("#master-volume-val").textContent = e.target.value;
+    if(masterGainNode) masterGainNode.gain.value = (+e.target.value)/100;
+  });
+
+  let audioPollHandle = null;
+  function startAudioPoll(){
+    if(audioPollHandle) return;
+    audioPollHandle = setInterval(() => {
+      if(!Object.keys(activeAudio).length){ clearInterval(audioPollHandle); audioPollHandle=null; return; }
+      Object.entries(activeAudio).forEach(([key, track]) => {
+        if(track.waiting) return;
+        const bar = document.querySelector(`.audio-progress[data-key="${cssEscape(key)}"] i`);
+        const timeEl = document.querySelector(`.audio-track-time[data-key="${cssEscape(key)}"]`);
+        if(bar && track.audioEl.duration){ bar.style.width = Math.min(100,(track.audioEl.currentTime/track.audioEl.duration)*100)+"%"; }
+        if(timeEl){ timeEl.textContent = `${fmtTime(track.audioEl.currentTime)} / ${fmtTime(track.audioEl.duration)}`; }
+      });
+    }, 250);
+  }
+
+  function renderActiveAudioPanel(){
+    const box = $("#active-audio-list");
+    const keys = Object.keys(activeAudio);
+    $("#audio-active-count").textContent = keys.length + "개";
+    if(!keys.length){ box.innerHTML = `<div class="audio-empty">현재 재생 중인 오디오가 없습니다.</div>`; return; }
+    box.innerHTML = keys.map(key => {
+      const t = activeAudio[key];
+      const c = cues[t.idx];
+      const vol = c && c.audio ? (c.audio.volume===undefined?100:c.audio.volume) : 100;
+      if(t.waiting){
+        return `<div class="audio-track"><div class="audio-track-top"><span class="audio-track-name">${escapeHtml(t.name)}${c?` · Cue ${escapeHtml(c.id)}`:""} (대기 중)</span></div>
+          <div class="audio-track-controls"><button class="audio-mini-btn stop" data-stopone="${escapeHtml(key)}">■</button><span style="font-size:10.5px;color:var(--text-3);">프리웨이트 대기 중</span></div></div>`;
+      }
+      return `<div class="audio-track">
+        <div class="audio-track-top"><span class="audio-track-name">${escapeHtml(t.name)}${c?` · Cue ${escapeHtml(c.id)}`:""}</span><span class="audio-track-time" data-key="${cssEscape(key)}">0:00 / 0:00</span></div>
+        <div class="audio-progress" data-key="${cssEscape(key)}" data-seekkey="${escapeHtml(key)}"><i></i></div>
+        <div class="audio-track-controls">
+          <button class="audio-mini-btn" data-pause="${escapeHtml(key)}">${t.audioEl.paused?"▶":"❚❚"}</button>
+          <button class="audio-mini-btn stop" data-stopone="${escapeHtml(key)}">■</button>
+          <input type="range" class="audio-vol-slider" min="0" max="100" value="${vol}" data-volkey="${escapeHtml(key)}">
+        </div></div>`;
+    }).join("");
+    box.querySelectorAll("[data-pause]").forEach(b => b.addEventListener("click", () => togglePauseAudio(b.dataset.pause)));
+    box.querySelectorAll("[data-stopone]").forEach(b => b.addEventListener("click", () => stopCueAudio(b.dataset.stopone, false)));
+    box.querySelectorAll("[data-seekkey]").forEach(bar => bar.addEventListener("click", (e) => {
+      const rect = bar.getBoundingClientRect();
+      seekAudio(bar.dataset.seekkey, (e.clientX-rect.left)/rect.width);
+    }));
+    box.querySelectorAll("[data-volkey]").forEach(sl => sl.addEventListener("input", (e) => {
+      const key = e.target.dataset.volkey;
+      const track = activeAudio[key];
+      if(track) track.gainNode.gain.value = (+e.target.value)/100;
+      if(track){ const c = cues[track.idx]; if(c && c.audio){ c.audio.volume=+e.target.value; scheduleSave(); } }
+    }));
+  }
+
+  // ===================== GO / spacebar =====================
+  function fireGo(){
+    const c = cues[cueIdx]; if(!c) return;
+    if(c.actionType === "audio"){ playCueAudio(cueIdx); }
+    else{ pushLog("info", `Cue ${c.id}: 재생 설정이 없어 표시만 되었습니다.`); }
+  }
+  $("#btn-go").addEventListener("click", () => {
+    fireGo();
+    if(cueIdx < cues.length-1){ cueIdx++; renderCueList(); updateGoBar(); }
+  });
+  document.addEventListener("keydown", (e) => {
+    if(e.code === "Space"){
+      const tag = (e.target.tagName||"").toLowerCase();
+      if(tag==="input" || tag==="textarea" || tag==="select") return;
+      e.preventDefault();
+      $("#btn-go").click();
+    }
+  });
+
+  init();
+})();
+</script>

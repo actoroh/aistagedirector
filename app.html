@@ -334,6 +334,10 @@
           <button class="btn primary" id="btn-mic">마이크 시작</button>
           <button class="btn primary" id="btn-go">지금 GO (수동 실행)</button>
           <button class="btn stop-all-btn" id="btn-stop-audio">오디오 전체 정지</button>
+          <span class="badge" style="display:flex; align-items:center; gap:6px;">마스터 볼륨
+            <input type="range" id="master-volume" min="0" max="100" value="100" style="width:80px; accent-color:var(--safe);">
+            <span id="master-volume-val" style="font-family:var(--font-mono);">100</span>
+          </span>
           <button class="btn" id="btn-run-reset">진행 초기화</button>
           <button class="btn danger" id="btn-stop" disabled>전체 중지</button>
         </div>
@@ -700,6 +704,15 @@
           <label style="font-size:10.5px; color:var(--text-2); display:flex; align-items:center; gap:6px;">
             <input type="checkbox" class="e-audio-loop" ${a.loop?"checked":""}> 반복재생
           </label>
+          <label style="font-size:10.5px; color:var(--text-2); display:flex; align-items:center; gap:6px;">프리웨이트(초)
+            <input type="number" class="field-input mono e-audio-prewait" min="0" max="60" step="0.5" value="${a.preWait||0}" style="width:50px;">
+          </label>
+          <label style="font-size:10.5px; color:var(--text-2); display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" class="e-audio-exclusive" ${a.exclusive?"checked":""}> 단독재생(다른 소리 정지)
+          </label>
+          <label style="font-size:10.5px; color:var(--text-2); display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" class="e-audio-autocontinue" ${a.autoContinue?"checked":""}> 종료 시 다음 큐 자동 진행
+          </label>
         </div>
       `;
       $(".e-audio-file", detail).addEventListener("change", (e) => {
@@ -720,6 +733,9 @@
       $(".e-audio-fadein", detail).addEventListener("input", e => { a.fadeIn = +e.target.value||0; scheduleSave(); });
       $(".e-audio-fadeout", detail).addEventListener("input", e => { a.fadeOut = +e.target.value||0; scheduleSave(); });
       $(".e-audio-loop", detail).addEventListener("change", e => { a.loop = e.target.checked; scheduleSave(); });
+      $(".e-audio-prewait", detail).addEventListener("input", e => { a.preWait = +e.target.value||0; scheduleSave(); });
+      $(".e-audio-exclusive", detail).addEventListener("change", e => { a.exclusive = e.target.checked; scheduleSave(); });
+      $(".e-audio-autocontinue", detail).addEventListener("change", e => { a.autoContinue = e.target.checked; scheduleSave(); });
     } else if(type === "midi"){
       const m = c.midi || (c.midi = { deviceId:"", channel:1, msgType:"note", number:60, value:100 });
       const options = midiOutputs.map(o => `<option value="${o.id}" ${o.id===m.deviceId?"selected":""}>${escapeHtml(o.name)}</option>`).join("");
@@ -751,17 +767,21 @@
 
   // ===================== Audio playback engine (Web Audio API) =====================
   let audioCtx = null;
+  let masterGainNode = null;
   function ensureAudioCtx(){
     if(!audioCtx){
       const AC = window.AudioContext || window.webkitAudioContext;
       if(!AC) return null;
       audioCtx = new AC();
+      masterGainNode = audioCtx.createGain();
+      masterGainNode.gain.value = (+($("#master-volume") ? $("#master-volume").value : 100))/100;
+      masterGainNode.connect(audioCtx.destination);
     }
     if(audioCtx.state === "suspended") audioCtx.resume();
     return audioCtx;
   }
 
-  const activeAudio = {}; // key -> { audioEl, gainNode, idx, name, fadeOutTimer, uid }
+  const activeAudio = {}; // key -> { audioEl, gainNode, idx, name, fadeOutTimer, uid, preWaitTimer }
   let audioUidSeq = 1;
 
   function liveAdjustVolume(key, volume0to100){
@@ -785,9 +805,37 @@
     if(activeAudio[key]) stopCueAudio(key, true);
 
     const a = c.audio || {};
+    const preWait = a.preWait || 0;
+
+    if(a.exclusive){
+      Object.keys(activeAudio).forEach(k => { if(k!==key) stopCueAudio(k, false); });
+    }
+
+    if(preWait > 0){
+      setStatus(`대기 중 (${preWait}초)`, null);
+      const timerToken = {};
+      activeAudio[key] = { preWaitTimer:timerToken, idx, name:attached.name, waiting:true };
+      renderActiveAudioPanel();
+      const th = setTimeout(() => {
+        if(activeAudio[key] && activeAudio[key].preWaitTimer===timerToken){
+          delete activeAudio[key];
+          startAudioPlayback(idx, key, attached, statusEl, setStatus);
+        }
+      }, preWait*1000);
+      activeAudio[key].timeoutHandle = th;
+    } else {
+      startAudioPlayback(idx, key, attached, statusEl, setStatus);
+    }
+  }
+
+  function startAudioPlayback(idx, key, attached, statusEl, setStatus){
+    const c = cues[idx];
+    const ctx = ensureAudioCtx();
+    const a = c.audio || {};
     const volume = (a.volume===undefined ? 100 : a.volume) / 100;
     const fadeIn = a.fadeIn || 0;
     const fadeOut = a.fadeOut || 0;
+    const autoContinue = !!a.autoContinue;
 
     const audioEl = new Audio(attached.url);
     audioEl.loop = !!a.loop;
@@ -797,7 +845,7 @@
     try{
       sourceNode = ctx.createMediaElementSource(audioEl);
       gainNode = ctx.createGain();
-      sourceNode.connect(gainNode).connect(ctx.destination);
+      sourceNode.connect(gainNode).connect(masterGainNode || ctx.destination);
     }catch(err){
       setStatus("오디오 연결 실패", false);
       pushLog("bad", `Cue ${c.id} 오디오 엔진 연결 실패: ${err.message}`);
@@ -833,9 +881,13 @@
       if(activeAudio[key] && activeAudio[key].uid===uid){
         delete activeAudio[key];
         renderActiveAudioPanel();
+        if(autoContinue && typeof onCueAudioAutoContinue === "function"){ onCueAudioAutoContinue(idx); }
       }
     });
   }
+
+  // Hook for pages that want "auto-continue to next cue" behavior; overridden in dashboard/sound-player wiring.
+  let onCueAudioAutoContinue = null;
 
   function rampGain(gainNode, target, seconds){
     const ctx = audioCtx; if(!ctx) { gainNode.gain.value = target; return; }
@@ -848,6 +900,8 @@
   function stopCueAudio(key, immediate){
     const track = activeAudio[key];
     if(!track) return;
+    if(track.timeoutHandle) clearTimeout(track.timeoutHandle);
+    if(track.waiting){ delete activeAudio[key]; renderActiveAudioPanel(); return; }
     if(track.fadeOutTimer) clearTimeout(track.fadeOutTimer);
     const c = cues[track.idx];
     const fadeOut = (c && c.audio && c.audio.fadeOut) || 0;
@@ -864,10 +918,16 @@
   }
 
   function togglePauseAudio(key){
-    const track = activeAudio[key]; if(!track) return;
+    const track = activeAudio[key]; if(!track || track.waiting) return;
     if(track.audioEl.paused){ track.audioEl.play(); track.paused=false; }
     else { track.audioEl.pause(); track.paused=true; }
     renderActiveAudioPanel();
+  }
+
+  function seekAudio(key, ratio){
+    const track = activeAudio[key]; if(!track || track.waiting || !track.audioEl.duration) return;
+    track.audioEl.currentTime = Math.max(0, Math.min(1, ratio)) * track.audioEl.duration;
+    updateAudioProgressOnly();
   }
 
   function stopAllAudio(){
@@ -875,6 +935,11 @@
     pushLog("info", "모든 오디오를 정지했습니다.");
   }
   $("#btn-stop-audio").addEventListener("click", stopAllAudio);
+  $("#master-volume").addEventListener("input", (e) => {
+    const v = +e.target.value;
+    $("#master-volume-val").textContent = v;
+    if(masterGainNode) masterGainNode.gain.value = v/100;
+  });
 
   function fmtTime(sec){
     if(!isFinite(sec) || sec<0) sec = 0;
@@ -893,6 +958,7 @@
 
   function updateAudioProgressOnly(){
     Object.entries(activeAudio).forEach(([key, track]) => {
+      if(track.waiting) return;
       const bar = document.querySelector(`.audio-progress[data-key="${cssEscape(key)}"] i`);
       const timeEl = document.querySelector(`.audio-track-time[data-key="${cssEscape(key)}"]`);
       if(bar && track.audioEl.duration){
@@ -917,13 +983,25 @@
       const t = activeAudio[key];
       const c = cues[t.idx];
       const vol = c && c.audio ? (c.audio.volume===undefined?100:c.audio.volume) : 100;
+      if(t.waiting){
+        return `
+        <div class="audio-track">
+          <div class="audio-track-top">
+            <span class="audio-track-name">${escapeHtml(t.name)}${c?` · Cue ${escapeHtml(c.id)}`:""} (대기 중)</span>
+          </div>
+          <div class="audio-track-controls">
+            <button class="audio-mini-btn stop" data-stopone="${escapeHtml(key)}">■</button>
+            <span style="font-size:10.5px;color:var(--text-3);">재생 대기 중 (프리웨이트)</span>
+          </div>
+        </div>`;
+      }
       return `
         <div class="audio-track">
           <div class="audio-track-top">
             <span class="audio-track-name">${escapeHtml(t.name)}${c?` · Cue ${escapeHtml(c.id)}`:""}</span>
             <span class="audio-track-time" data-key="${cssEscape(key)}">0:00 / 0:00</span>
           </div>
-          <div class="audio-progress" data-key="${cssEscape(key)}"><i></i></div>
+          <div class="audio-progress" data-key="${cssEscape(key)}" data-seekkey="${escapeHtml(key)}"><i></i></div>
           <div class="audio-track-controls">
             <button class="audio-mini-btn" data-pause="${escapeHtml(key)}">${t.audioEl.paused?"▶":"❚❚"}</button>
             <button class="audio-mini-btn stop" data-stopone="${escapeHtml(key)}">■</button>
@@ -934,6 +1012,11 @@
 
     box.querySelectorAll("[data-pause]").forEach(btn => btn.addEventListener("click", () => togglePauseAudio(btn.dataset.pause)));
     box.querySelectorAll("[data-stopone]").forEach(btn => btn.addEventListener("click", () => stopCueAudio(btn.dataset.stopone, false)));
+    box.querySelectorAll("[data-seekkey]").forEach(bar => bar.addEventListener("click", (e) => {
+      const rect = bar.getBoundingClientRect();
+      const ratio = (e.clientX - rect.left) / rect.width;
+      seekAudio(bar.dataset.seekkey, ratio);
+    }));
     box.querySelectorAll("[data-volkey]").forEach(sl => sl.addEventListener("input", (e) => {
       const key = e.target.dataset.volkey;
       const track = activeAudio[key];
@@ -1380,5 +1463,8 @@
   });
 
   init();
+  onCueAudioAutoContinue = (finishedIdx) => {
+    if(finishedIdx === cueIdx && !alertState){ manualGo(); }
+  };
 })();
 </script>
