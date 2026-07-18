@@ -447,18 +447,16 @@
     </div>
   `;
 
-  // ===================== Storage helpers (localStorage — works on any host) =====================
+  // ===================== Storage helpers (Claude artifact window.storage) =====================
   async function safeGet(key){
-    try{ return window.localStorage.getItem(key); }
+    try{ const res = await window.storage.get(key, false); return res ? res.value : null; }
     catch(e){ return null; }
   }
   async function safeSet(key, value){
-    try{ window.localStorage.setItem(key, value); return true; }
+    try{ await window.storage.set(key, value, false); return true; }
     catch(e){ return false; }
   }
-  async function safeDelete(key){
-    try{ window.localStorage.removeItem(key); }catch(e){}
-  }
+  async function safeDelete(key){ try{ await window.storage.delete(key, false); }catch(e){} }
 
   function slugify(name){
     let s = name.trim().replace(/[\/'"\\]/g,"").replace(/\s+/g,"-");
